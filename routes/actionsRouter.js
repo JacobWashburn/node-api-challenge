@@ -14,24 +14,21 @@ router.get ('/', (req, res) => {
         });
 });
 
-router.get('/:id', (req, res) => {
-	const actionId = req.params.id;
-	db.get(actionId)
-        .then(project => {
+router.get ('/:id', validateId, (req, res) => {
+    const actionId = req.params.id;
+    db.get (actionId)
+        .then (project => {
             if (project) {
-            	res.status(200).json(project)
+                res.status (200).json (project);
             } else {
-            	res.status(500).json({message: 'No action with that id found.'})
+                res.status (500).json ({message: 'No action with that id found.'});
             }
         })
-        .catch(error => {
-            console.log ('get action by id error', error);
-            res.status(500).json({message: 'There was an error getting an action by id.'})
-        })
+
 });
 
 router.post ('/:id', checkPost, (req, res) => {
-    const newAction = {...req.body,project_id: req.params.id};
+    const newAction = {...req.body, project_id: req.params.id};
     db.insert (newAction)
         .then (post => {
             res.status (201).json ({created: post});
@@ -56,37 +53,41 @@ router.put ('/:id', checkPost, (req, res) => {
         });
 });
 
-router.delete ('/:id', (req, res) => {
+router.delete ('/:id', validateId, (req, res) => {
     const actionId = req.params.id;
-    let removeAction = {};
-    db.get (actionId)
-        .then (action => {
-            if (action) {
-                removeAction = action;
-            } else {
-                console.log ('no action found');
-            }
-
-        })
-        .catch (error => {
-            console.log ('delete get by id error', error);
-        });
+    let removeAction = req.validatedObject;
     db.remove (actionId)
         .then (count => {
-            if (count) {
-                res.status (200).json ({
-                    message: `Successfully removed the action with Id: ${actionId}`,
-                    deleted: removeAction
-                });
-            } else {
-                res.status (500).json ({message: 'There is no action with that Id.'});
-            }
+            res.status (200).json ({
+                message: `Successfully removed ${count} action with Id: ${actionId}`,
+                deleted: removeAction
+            });
         })
         .catch (error => {
             console.log ('remove action error', error);
             res.status (500).json ({message: 'There was an error when trying to remove that action.'});
         });
 });
+
+function validateId (req, res, next) {
+    if (Number(req.params.id)) {
+    	db.get (req.params.id)
+            .then (validatedId => {
+                if (validatedId) {
+                    req.validatedObject = validatedId;
+                    next ();
+                } else {
+                    res.status (500).json ({message: `Nothing with Id: ${req.params.id}`});
+                }
+            })
+        .catch (error => {
+            console.log ('get by id error', error, req.route);
+            res.status (500).json ({message: 'There was an error getting from database.'});
+        });
+    } else {
+    	 res.status (404).json ({message: 'Please provide a valid id.'});
+    }
+}
 
 function checkPost (req, res, next) {
     const post = req.body;

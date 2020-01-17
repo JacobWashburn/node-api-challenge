@@ -14,36 +14,24 @@ router.get ('/', (req, res) => {
         });
 });
 
-router.get('/:id', (req, res) => {
-	const projectId = req.params.id;
-	db.get(projectId)
-        .then(project => {
-            if (project) {
-            	res.status(200).json(project)
-            } else {
-            	res.status(500).json({message: 'No project with that id found.'})
-            }
-        })
-        .catch(error => {
-            console.log ('get project by id error', error);
-            res.status(500).json({message: 'There was an error getting a project by id.'})
-        })
+router.get ('/:id', validateId, (req, res) => {
+    res.status (200).json (req.validatedObject);
 });
 
-router.get('/:id/actions', (req, res) => {
-	const projectId = req.params.id;
-	db.getProjectActions(projectId)
-        .then(actions => {
+router.get ('/:id/actions', validateId, (req, res) => {
+    const projectId = req.params.id;
+    db.getProjectActions (projectId)
+        .then (actions => {
             if (actions) {
-            	res.status(200).json(actions)
+                res.status (200).json (actions);
             } else {
-            	res.status(500).json({message: 'No actions for that id found.'})
+                res.status (500).json ({message: 'No actions for that id found.'});
             }
         })
-        .catch(error => {
+        .catch (error => {
             console.log ('get project by id error', error);
-            res.status(500).json({message: 'There was an error getting project actions.'})
-        })
+            res.status (500).json ({message: 'There was an error getting project actions.'});
+        });
 });
 
 router.post ('/', checkPost, (req, res) => {
@@ -58,13 +46,13 @@ router.post ('/', checkPost, (req, res) => {
         });
 });
 
-router.put ('/:id', checkPost, (req, res) => {
+router.put ('/:id', validateId, checkPost, (req, res) => {
     const projectId = req.params.id;
     const projectEdit = req.body;
     console.log (projectEdit, projectId);
     db.update (projectId, projectEdit)
         .then (project => {
-            res.status (200).json (project);
+            res.status (200).json ({previous: req.validatedObject, updated: project});
         })
         .catch (error => {
             console.log ('edit project error', error);
@@ -72,37 +60,37 @@ router.put ('/:id', checkPost, (req, res) => {
         });
 });
 
-router.delete ('/:id', (req, res) => {
+router.delete ('/:id', validateId, (req, res) => {
     const projectId = req.params.id;
-    let removeProject = {};
-    db.get (projectId)
-        .then (project => {
-            if (project) {
-                removeProject = project;
-            } else {
-                console.log ('no project found');
-            }
-
-        })
-        .catch (error => {
-            console.log ('delete get by id error', error);
-        });
+    let removeProject = req.validatedObject;
     db.remove (projectId)
         .then (count => {
-            if (count) {
-                res.status (200).json ({
-                    message: `Successfully removed the project with Id: ${projectId}`,
-                    deleted: removeProject
-                });
-            } else {
-                res.status (500).json ({message: 'There is no project with that Id.'});
-            }
+            res.status (200).json ({
+                message: `Successfully removed ${count} project with Id: ${projectId}`,
+                deleted: removeProject
+            });
         })
         .catch (error => {
             console.log ('remove project error', error);
             res.status (500).json ({message: 'There was an error when trying to remove that project.'});
         });
 });
+
+function validateId (req, res, next) {
+    if (Number (req.params.id)) {
+        db.get (req.params.id)
+            .then (validatedId => {
+                if (validatedId) {
+                    req.validatedObject = validatedId;
+                    next ();
+                } else {
+                    res.status (500).json ({message: `Nothing with Id: ${req.params.id}`});
+                }
+            });
+    } else {
+        res.status (404).json ({message: 'Please provide a valid id.'});
+    }
+}
 
 function checkPost (req, res, next) {
     const post = req.body;
