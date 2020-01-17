@@ -40,13 +40,24 @@ Demonstrate your understanding of this Sprint's concepts by answering the follow
 
 - [ ] Mention two parts of Express that you learned about this week.
 
+routing and middleware
+
 - [ ] Describe Middleware?
+
+anything that gets 'used'. ie: server.use(express.json()) or server.use('/api',apiRouter)
+in can be built ins or custom functions.
 
 - [ ] Describe a Resource?
 
+a type of data. ie: json, yaml, xml, html.
+
 - [ ] What can the API return to help clients know if a request was successful?
 
+a status. id 500 for internal error or 200 for success. it can also return a message about what the status means.
+
 - [ ] How can we partition our application into sub-applications?
+
+by using routes?
 
 ## Minimum Viable Product
 
